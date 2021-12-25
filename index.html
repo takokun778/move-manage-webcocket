@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+    <div id="user"></div>
+    <button id="join">JOIN</button>
+    <button id="quit">QUIT</button>
+    <table id="page" border="1">
+        <tr><td>1</td><td></td></tr>
+        <tr><td>2</td><td></td></tr>
+        <tr><td>3</td><td></td></tr>
+        <tr><td>4</td><td></td></tr>
+        <tr><td>5</td><td></td></tr>
+        <tr><td>6</td><td></td></tr>
+        <tr><td>7</td><td></td></tr>
+        <tr><td>8</td><td></td></tr>
+        <tr><td>9</td><td></td></tr>
+    </table>
+    <script>
+        const ws = new WebSocket('ws://localhost:8080')
+
+        const userId = Math.floor(Math.random() * 1000) + 1;
+
+        document.getElementById('user').innerHTML = "<p> login id : " + userId + "</p>"
+
+        const users = new Map();
+
+        ws.addEventListener('open', e => {
+            console.log('open');
+        })
+
+        ws.addEventListener('message', e => {
+            const data = JSON.parse(e.data);
+            const state = data.state;
+            switch (state) {
+                case 'JOIN':
+                    console.log(`JOIN : ${data.user}`);
+                    users.set(data.user, data.page);
+                    break;
+                case 'EDIT':
+                    console.log(`EDIT : ${data.user}`);
+                    users.set(data.user, data.page);
+                    break;
+                case 'QUIT':
+                    console.log(`QUIT : ${data.user}`);
+                    users.delete(data.user);
+                    break;
+                default:
+                    break;
+            }
+            const table = document.getElementById('page');
+            const array = [];
+            users.forEach((v, k) => {
+                array[v] = array[v] ? `${array[v]}, ${k}` : k;
+                console.table(array);
+            });
+            let index = 0;
+            for(const row of table.rows) {
+                row.cells[1].innerHTML = array[index] ? array[index] : '';
+                index += 1;
+            }
+        })
+
+        let interval = 0;
+
+        join.addEventListener("click", e => {
+            const page = Math.floor(Math.random() * 9) + 1;
+            const join = {
+                user: userId,
+                page: page,
+                state: 'JOIN',
+            }
+            ws.send(JSON.stringify(join));
+            users.set(userId, page)
+            interval = setInterval(() => {
+                const edit = {
+                    user: userId,
+                    page: Math.floor(Math.random() * 9) + 1,
+                    state: 'EDIT',
+                }
+                ws.send(JSON.stringify(edit));
+            }, 1000);
+        })
+
+        quit.addEventListener("click", e => {
+            const quit = {
+                user: userId,
+                page: -1,
+                state: 'QUIT',
+            }
+            ws.send(JSON.stringify(quit));
+            clearInterval(interval);
+        });
+    </script>
+</body>
+</html>
