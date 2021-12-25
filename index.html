@@ -37,15 +37,22 @@
             const state = data.state;
             switch (state) {
                 case 'JOIN':
-                    console.log(`JOIN : ${data.user}`);
+                    console.log('JOIN SOMEONE');
+                    users.set(data.user, data.page);
+                    const edit = {
+                        user: userId,
+                        page: users.get(userId),
+                        state: 'NOW',
+                    };
+                    ws.send(JSON.stringify(edit));
+                    break;
+                case 'MOVE':
                     users.set(data.user, data.page);
                     break;
-                case 'EDIT':
-                    console.log(`EDIT : ${data.user}`);
+                case 'NOW':
                     users.set(data.user, data.page);
                     break;
                 case 'QUIT':
-                    console.log(`QUIT : ${data.user}`);
                     users.delete(data.user);
                     break;
                 default:
@@ -55,11 +62,10 @@
             const array = [];
             users.forEach((v, k) => {
                 array[v] = array[v] ? `${array[v]}, ${k}` : k;
-                console.table(array);
             });
             let index = 0;
             for(const row of table.rows) {
-                row.cells[1].innerHTML = array[index] ? array[index] : '';
+                row.cells[1].innerHTML = array[index+1] ?? '';
                 index += 1;
             }
         })
@@ -76,19 +82,19 @@
             ws.send(JSON.stringify(join));
             users.set(userId, page)
             interval = setInterval(() => {
-                const edit = {
+                const move = {
                     user: userId,
                     page: Math.floor(Math.random() * 9) + 1,
-                    state: 'EDIT',
+                    state: 'MOVE',
                 }
-                ws.send(JSON.stringify(edit));
+                ws.send(JSON.stringify(move));
             }, 1000);
         })
 
         quit.addEventListener("click", e => {
             const quit = {
                 user: userId,
-                page: -1,
+                page: 0,
                 state: 'QUIT',
             }
             ws.send(JSON.stringify(quit));
